@@ -1,0 +1,9 @@
+name: dd-test
+version: 0.1.0
+synopsis: DD performance testing program
+obuild-ver: 1
+
+executable dd-test
+  main: dd_test.ml
+  src-dir: dd-test
+  build-deps: xen-api-client, xcp-inventory
