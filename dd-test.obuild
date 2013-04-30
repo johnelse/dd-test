@@ -5,5 +5,5 @@ obuild-ver: 1
 
 executable dd-test
   main: dd_test.ml
-  src-dir: dd-test
+  src-dir: src
   build-deps: rpclib, rpclib.unix, xen-api-client, xcp-inventory
