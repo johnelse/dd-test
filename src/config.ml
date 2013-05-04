@@ -26,7 +26,7 @@ open API
 module XenAPI = Client.Client
 
 let load ~rpc ~session_id =
-	let dd_program = ref "" in
+	let dd_program = ref _sparse_dd in
 	let mode = ref Filesystem in
 	let source_vdi = ref (Ref.of_string "") in
 	let dest_sr = ref (Ref.of_string "") in
