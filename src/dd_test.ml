@@ -4,6 +4,7 @@ let xapi_rpc request =
 		~filename:(Filename.concat "/var/lib/xcp" "xapi")
 		~path:"/" request
 
+open API
 module XenAPI = Client.Client
 
 let get_dom0 ~rpc ~session_id =
@@ -17,4 +18,4 @@ let () =
 		~rpc ~uname:"dd-test" ~pwd:"" ~version:"1.1" in
 	let _ = Config.load ~rpc ~session_id in
 	let dom0 = get_dom0 ~rpc ~session_id in
-	print_endline (API.Ref.of_string dom0)
+	print_endline (Ref.of_string dom0)
