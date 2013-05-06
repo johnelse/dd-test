@@ -1,5 +1,14 @@
 module XenAPI = Client.Client
 
+let finally f cleanup =
+	let result =
+		try f ()
+		with e ->
+			cleanup ();
+			raise e
+	in
+	result
+
 let rec find_existing_file ~files =
 	match files with
 	| [] -> raise Not_found
