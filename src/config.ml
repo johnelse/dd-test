@@ -15,7 +15,7 @@ let mode_of_string = function
 	| "tapdevice" -> Tapdevice
 	| _ -> failwith "Unknown mode"
 
-type config_t = {
+type t = {
 	dd_program: string;
 	mode: mode_t;
 	source_vdi: API.ref_VDI;
