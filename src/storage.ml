@@ -14,7 +14,7 @@ let get_vhd_path ~rpc ~session_id ~sr ~vdi =
 			(XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr)
 			(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi)
 	| "lvm" | "lvmohba" | "lvmoiscsi" ->
-		Printf.sprintf "/dev/sm/backend/%s/%s"
+		Printf.sprintf "/dev/VG_XenStorage-%s/VHD-%s"
 			(XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr)
 			(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi)
 	| _ ->
