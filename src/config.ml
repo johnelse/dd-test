@@ -19,8 +19,8 @@ let mode_of_string = function
 type t = {
 	dd_program: dd_program_t;
 	mode: mode_t;
-	source_vdi: API.ref_VDI;
-	dest_sr: API.ref_SR;
+	src_vdi: API.ref_VDI;
+	dst_sr: API.ref_SR;
 }
 
 open API
@@ -29,8 +29,8 @@ module XenAPI = Client.Client
 let load ~rpc ~session_id =
 	let dd_program = ref Sparse_dd in
 	let mode = ref Filesystem in
-	let source_vdi = ref (Ref.of_string "") in
-	let dest_sr = ref (Ref.of_string "") in
+	let src_vdi = ref (Ref.of_string "") in
+	let dst_sr = ref (Ref.of_string "") in
 	Arg.parse
 		[
 			("-dd-program",
@@ -41,11 +41,11 @@ let load ~rpc ~session_id =
 				"Determines whether to use filesystem or tap devices");
 			("-src-vdi",
 				Arg.String (fun str ->
-					source_vdi := XenAPI.VDI.get_by_uuid ~rpc ~session_id ~uuid:str),
+					src_vdi := XenAPI.VDI.get_by_uuid ~rpc ~session_id ~uuid:str),
 				"The VDI from which we will copy");
 			("-dst-sr",
 				Arg.String (fun str ->
-					dest_sr := XenAPI.SR.get_by_uuid ~rpc ~session_id ~uuid:str),
+					dst_sr := XenAPI.SR.get_by_uuid ~rpc ~session_id ~uuid:str),
 				"The SR to which we will copy");
 		]
 		(fun _ -> ())
@@ -53,6 +53,6 @@ let load ~rpc ~session_id =
 	{
 		dd_program = !dd_program;
 		mode = !mode;
-		source_vdi = !source_vdi;
-		dest_sr = !dest_sr;
+		src_vdi = !src_vdi;
+		dst_sr = !dst_sr;
 	}
