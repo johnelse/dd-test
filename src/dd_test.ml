@@ -11,6 +11,5 @@ let () =
 	let rpc = xapi_rpc in
 	let session_id = XenAPI.Session.login_with_password
 		~rpc ~uname:"dd-test" ~pwd:"" ~version:"1.1" in
-	let _ = Config.load ~rpc ~session_id in
-	let dom0 = Util.get_dom0 ~rpc ~session_id in
-	print_endline (Ref.of_string dom0)
+	let config = Config.load ~rpc ~session_id in
+	Storage.do_copy ~rpc ~session_id ~config

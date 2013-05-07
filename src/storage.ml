@@ -4,7 +4,10 @@ module XenAPI = Client.Client
 exception Sr_type_unsupported
 
 let _dd = "/bin/dd"
-let _sparse_dd = "/opt/xensource/libexec/sparse_dd"
+let _sparse_dd = Util.find_existing_file [
+	"/opt/xensource/libexec/sparse_dd";
+	"/usr/lib/xcp/lib/sparse_dd";
+]
 
 let get_vhd_path ~rpc ~session_id ~vdi =
 	let sr = XenAPI.VDI.get_SR ~rpc ~session_id ~self:vdi in
@@ -52,3 +55,45 @@ let make_empty_dst_vdi ~rpc ~session_id ~src_vdi ~dst_sr =
 		API.vDI_sm_config = [];
 	} in
 	XenAPI.VDI.create_from_record ~rpc ~session_id ~value:dst_vdi_rec
+
+let dd ~input_path ~output_path =
+	ignore (Forkhelpers.execute_command_get_output
+		_dd
+		[
+			(Printf.sprintf "if=%s" input_path);
+			(Printf.sprintf "of=%s" output_path);
+		])
+
+let sparse_dd ~input_path ~output_path ~size =
+	ignore (Forkhelpers.execute_command_get_output
+		_sparse_dd
+		[
+			"-src"; input_path;
+			"-dest"; output_path;
+			"-size"; Int64.to_string size;
+		])
+
+let copy_data ~rpc ~session_id ~src_vdi ~dst_vdi ~dd_program ~mode =
+	with_dom0_vbd ~rpc ~session_id ~vdi:src_vdi ~mode:`RO
+		(fun src_dev ->
+			with_dom0_vbd ~rpc ~session_id ~vdi:dst_vdi ~mode:`RW
+				(fun dst_dev ->
+					let input_path, output_path = match mode with
+					| Config.Tapdevice -> src_dev, dst_dev
+					| Config.Filesystem ->
+						(get_vhd_path ~rpc ~session_id ~vdi:src_vdi),
+						(get_vhd_path ~rpc ~session_id ~vdi:dst_vdi)
+					in
+					match dd_program with
+					| Config.Dd -> dd ~input_path ~output_path
+					| Config.Sparse_dd ->
+						let size = XenAPI.VDI.get_virtual_size ~rpc ~session_id ~self:src_vdi in
+						sparse_dd ~input_path ~output_path ~size))
+
+let do_copy ~rpc ~session_id ~config =
+	let src_vdi = config.Config.src_vdi in
+	let dst_vdi = make_empty_dst_vdi ~rpc ~session_id
+		~src_vdi ~dst_sr:config.Config.dst_sr in
+	copy_data ~rpc ~session_id ~src_vdi ~dst_vdi
+		~dd_program:config.Config.dd_program
+		~mode:config.Config.mode
