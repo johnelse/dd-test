@@ -1,7 +1,7 @@
 open API
 module XenAPI = Client.Client
 
-exception Sr_unsupported
+exception Sr_type_unsupported
 
 let get_vhd_path ~rpc ~session_id ~sr ~vdi =
 	let sr_type = XenAPI.SR.get_type ~rpc ~session_id ~self:sr in
@@ -15,7 +15,7 @@ let get_vhd_path ~rpc ~session_id ~sr ~vdi =
 			(XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr)
 			(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi)
 	| _ ->
-		raise Sr_unsupported
+		raise Sr_type_unsupported
 
 let with_dom0_vbd ~rpc ~session_id ~vdi ~mode ~f =
 	let vbd = XenAPI.VBD.create ~rpc ~session_id
