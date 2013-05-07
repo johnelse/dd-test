@@ -48,5 +48,6 @@ let make_empty_dst_vdi ~rpc ~session_id ~src_vdi ~dst_sr =
 	let dst_vdi_rec = {
 		src_vdi_rec with
 		API.vDI_SR = dst_sr;
+		API.vDI_sm_config = [];
 	} in
 	XenAPI.VDI.create_from_record ~rpc ~session_id ~value:dst_vdi_rec
