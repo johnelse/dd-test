@@ -1,9 +1,10 @@
-let _dd = "/bin/dd"
-let _sparse_dd = "/opt/xensource/libexec/sparse_dd"
+type dd_program_t =
+	| Dd
+	| Sparse_dd
 
 let dd_program_of_string = function
-	| "dd" -> _dd
-	| "sparse_dd" -> _sparse_dd
+	| "dd" -> Dd
+	| "sparse_dd" -> Sparse_dd
 	| _ -> failwith "Unknown dd program"
 
 type mode_t =
@@ -16,7 +17,7 @@ let mode_of_string = function
 	| _ -> failwith "Unknown mode"
 
 type t = {
-	dd_program: string;
+	dd_program: dd_program_t;
 	mode: mode_t;
 	source_vdi: API.ref_VDI;
 	dest_sr: API.ref_SR;
@@ -26,7 +27,7 @@ open API
 module XenAPI = Client.Client
 
 let load ~rpc ~session_id =
-	let dd_program = ref _sparse_dd in
+	let dd_program = ref Sparse_dd in
 	let mode = ref Filesystem in
 	let source_vdi = ref (Ref.of_string "") in
 	let dest_sr = ref (Ref.of_string "") in
