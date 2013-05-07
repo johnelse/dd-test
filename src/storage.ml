@@ -20,7 +20,7 @@ let get_vhd_path ~rpc ~session_id ~sr ~vdi =
 	| _ ->
 		raise Sr_type_unsupported
 
-let with_dom0_vbd ~rpc ~session_id ~vdi ~mode ~f =
+let with_dom0_vbd ~rpc ~session_id ~vdi ~mode f =
 	let vbd = XenAPI.VBD.create ~rpc ~session_id
 		~vM:(Util.get_dom0 ~rpc ~session_id)
 		~vDI:vdi
@@ -38,7 +38,7 @@ let with_dom0_vbd ~rpc ~session_id ~vdi ~mode ~f =
 	Util.finally
 		(fun () ->
 			let device = XenAPI.VBD.get_device ~rpc ~session_id ~self:vbd in
-			f device)
+			f (Filename.concat "/dev" device))
 		(fun () ->
 			XenAPI.VBD.unplug ~rpc ~session_id ~self:vbd;
 			XenAPI.VBD.destroy ~rpc ~session_id ~self:vbd)
