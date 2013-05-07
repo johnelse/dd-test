@@ -6,7 +6,8 @@ exception Sr_type_unsupported
 let _dd = "/bin/dd"
 let _sparse_dd = "/opt/xensource/libexec/sparse_dd"
 
-let get_vhd_path ~rpc ~session_id ~sr ~vdi =
+let get_vhd_path ~rpc ~session_id ~vdi =
+	let sr = XenAPI.VDI.get_SR ~rpc ~session_id ~self:vdi in
 	let sr_type = XenAPI.SR.get_type ~rpc ~session_id ~self:sr in
 	match sr_type with
 	| "nfs" | "ext" ->
