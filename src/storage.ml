@@ -57,21 +57,23 @@ let make_empty_dst_vdi ~rpc ~session_id ~src_vdi ~dst_sr =
 	XenAPI.VDI.create_from_record ~rpc ~session_id ~value:dst_vdi_rec
 
 let dd ~input_path ~output_path =
-	ignore (Forkhelpers.execute_command_get_output
-		_dd
-		[
-			(Printf.sprintf "if=%s" input_path);
-			(Printf.sprintf "of=%s" output_path);
-		])
+	let args = [
+		(Printf.sprintf "if=%s" input_path);
+		(Printf.sprintf "of=%s" output_path);
+	] in
+	Printf.printf "Calling %s with args [%s]\n"
+		_dd (String.concat "; " args);
+	ignore (Forkhelpers.execute_command_get_output _dd args)
 
 let sparse_dd ~input_path ~output_path ~size =
-	ignore (Forkhelpers.execute_command_get_output
-		_sparse_dd
-		[
-			"-src"; input_path;
-			"-dest"; output_path;
-			"-size"; Int64.to_string size;
-		])
+	let args = [
+		"-src"; input_path;
+		"-dest"; output_path;
+		"-size"; Int64.to_string size;
+	] in
+	Printf.printf "Calling %s with args [%s]\n"
+		_sparse_dd (String.concat "; " args);
+	ignore (Forkhelpers.execute_command_get_output _sparse_dd args)
 
 let copy_data ~rpc ~session_id ~src_vdi ~dst_vdi ~dd_program ~mode =
 	with_dom0_vbd ~rpc ~session_id ~vdi:src_vdi ~mode:`RO
@@ -84,6 +86,7 @@ let copy_data ~rpc ~session_id ~src_vdi ~dst_vdi ~dd_program ~mode =
 						(get_vhd_path ~rpc ~session_id ~vdi:src_vdi),
 						(get_vhd_path ~rpc ~session_id ~vdi:dst_vdi)
 					in
+					Printf.printf "Copying from path %s to path %s\n" input_path output_path;
 					match dd_program with
 					| Config.Dd -> dd ~input_path ~output_path
 					| Config.Sparse_dd ->
@@ -94,6 +97,8 @@ let do_copy ~rpc ~session_id ~config =
 	let src_vdi = config.Config.src_vdi in
 	let dst_vdi = make_empty_dst_vdi ~rpc ~session_id
 		~src_vdi ~dst_sr:config.Config.dst_sr in
+	Printf.printf "Will copy into VDI %s\n"
+		(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:dst_vdi);
 	copy_data ~rpc ~session_id ~src_vdi ~dst_vdi
 		~dd_program:config.Config.dd_program
 		~mode:config.Config.mode
