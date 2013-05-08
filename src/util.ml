@@ -7,6 +7,7 @@ let finally f cleanup =
 			cleanup ();
 			raise e
 	in
+	cleanup ();
 	result
 
 let rec find_existing_file ~files =
