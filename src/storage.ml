@@ -9,18 +9,26 @@ let _sparse_dd = Util.find_existing_file [
 	"/usr/lib/xcp/lib/sparse_dd";
 ]
 
-let get_vhd_path ~rpc ~session_id ~vdi =
-	let sr = XenAPI.VDI.get_SR ~rpc ~session_id ~self:vdi in
-	let sr_type = XenAPI.SR.get_type ~rpc ~session_id ~self:sr in
+let get_vhd_path ~sr_type ~sr_uuid ~vdi_uuid =
 	match sr_type with
 	| "nfs" | "ext" ->
-		Printf.sprintf "/var/run/sr-mount/%s/%s.vhd"
-			(XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr)
-			(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi)
+		Printf.sprintf "/var/run/sr-mount/%s/%s.vhd" sr_uuid vdi_uuid
 	| "lvm" | "lvmohba" | "lvmoiscsi" ->
-		Printf.sprintf "/dev/VG_XenStorage-%s/VHD-%s"
-			(XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr)
-			(XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi)
+		Printf.sprintf "/dev/VG_XenStorage-%s/VHD-%s" sr_uuid vdi_uuid
+	| _ ->
+		raise Sr_type_unsupported
+
+let with_activated_vhd ~rpc ~session_id ~vdi f =
+	let sr = XenAPI.VDI.get_SR ~rpc ~session_id ~self:vdi in
+	let sr_type = XenAPI.SR.get_type ~rpc ~session_id ~self:sr in
+	let sr_uuid = XenAPI.SR.get_uuid ~rpc ~session_id ~self:sr in
+	let vdi_uuid = XenAPI.VDI.get_uuid ~rpc ~session_id ~self:vdi in
+	let vhd_path = get_vhd_path ~sr_type ~sr_uuid ~vdi_uuid in
+	match sr_type with
+	| "nfs" | "ext" ->
+		f vhd_path
+	| "lvm" | "lvmohba" | "lvmoiscsi" ->
+		failwith "not implemented"
 	| _ ->
 		raise Sr_type_unsupported
 
@@ -46,6 +54,11 @@ let with_dom0_vbd ~rpc ~session_id ~vdi ~mode f =
 		(fun () ->
 			XenAPI.VBD.unplug ~rpc ~session_id ~self:vbd;
 			XenAPI.VBD.destroy ~rpc ~session_id ~self:vbd)
+
+let with_prepared_vdi ~rpc ~session_id ~vdi ~mode ~vbd_mode f =
+	match mode with
+	| Config.Filesystem -> with_activated_vhd ~rpc ~session_id ~vdi f
+	| Config.Tapdevice -> with_dom0_vbd ~rpc ~session_id ~vdi ~mode:vbd_mode f
 
 let make_empty_dst_vdi ~rpc ~session_id ~src_vdi ~dst_sr =
 	let src_vdi_rec = XenAPI.VDI.get_record ~rpc ~session_id ~self:src_vdi in
@@ -80,16 +93,10 @@ let sparse_dd ~input_path ~output_path ~size =
 	Printf.printf "%s stderr: %s\n" _sparse_dd (snd output)
 
 let copy_data ~rpc ~session_id ~src_vdi ~dst_vdi ~dd_program ~mode =
-	with_dom0_vbd ~rpc ~session_id ~vdi:src_vdi ~mode:`RO
-		(fun src_dev ->
-			with_dom0_vbd ~rpc ~session_id ~vdi:dst_vdi ~mode:`RW
-				(fun dst_dev ->
-					let input_path, output_path = match mode with
-					| Config.Tapdevice -> src_dev, dst_dev
-					| Config.Filesystem ->
-						(get_vhd_path ~rpc ~session_id ~vdi:src_vdi),
-						(get_vhd_path ~rpc ~session_id ~vdi:dst_vdi)
-					in
+	with_prepared_vdi ~rpc ~session_id ~vdi:src_vdi ~mode ~vbd_mode:`RO
+		(fun input_path ->
+			with_prepared_vdi ~rpc ~session_id ~vdi:dst_vdi ~mode ~vbd_mode:`RW
+				(fun output_path ->
 					Printf.printf "Copying from path %s to path %s\n" input_path output_path;
 					match dd_program with
 					| Config.Dd -> dd ~input_path ~output_path
