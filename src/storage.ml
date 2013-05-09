@@ -63,7 +63,9 @@ let dd ~input_path ~output_path =
 	] in
 	Printf.printf "Calling %s with args [%s]\n"
 		_dd (String.concat "; " args);
-	ignore (Forkhelpers.execute_command_get_output _dd args)
+	let output = Forkhelpers.execute_command_get_output _dd args in
+	Printf.printf "%s stdout: %s\n" _dd (fst output);
+	Printf.printf "%s stderr: %s\n" _dd (snd output)
 
 let sparse_dd ~input_path ~output_path ~size =
 	let args = [
@@ -73,7 +75,9 @@ let sparse_dd ~input_path ~output_path ~size =
 	] in
 	Printf.printf "Calling %s with args [%s]\n"
 		_sparse_dd (String.concat "; " args);
-	ignore (Forkhelpers.execute_command_get_output _sparse_dd args)
+	let output = Forkhelpers.execute_command_get_output _sparse_dd args in
+	Printf.printf "%s stdout: %s\n" _sparse_dd (fst output);
+	Printf.printf "%s stderr: %s\n" _sparse_dd (snd output)
 
 let copy_data ~rpc ~session_id ~src_vdi ~dst_vdi ~dd_program ~mode =
 	with_dom0_vbd ~rpc ~session_id ~vdi:src_vdi ~mode:`RO
